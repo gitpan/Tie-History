@@ -7,7 +7,7 @@ use warnings::register;
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub TIESCALAR {
   my $self = shift;
@@ -303,23 +303,30 @@ Tie::History - Perl extension giving scalars, arrays and hashes a history.
 
   use Tie::History;
 
-  tie($scalar, 'Tie::History');
+  my $scalartobj = tie($scalar, 'Tie::History');
   $scalar = "Blah blah blah";
+  $tiedobject->commit;
+  # If you don't have $tiedobject, you can use tied().
   tied($scalar)->commit; # Commit the change
   $scalar = "More more more";
-  tied($scalar)->commit; # Commit the change
+  $tiedobject->commit; # Commit the change
 
-  tie(@array,  'Tie::History');
+  my $arraytobj = tie(@array,  'Tie::History');
   @array = qw/one two three/;
+  $arraytobj->commit;
 
-  tie(%hash,   'Tie::History');
+  my $hashtobj = tie(%hash,   'Tie::History');
   $hash{key} = "value";
-
+  $hashtobj->commit;
 
 =head1 METHODS
 
 =item commit
 
+  $scalartobj->commit;
+  $arraytobj->commit;
+  $hashtobj->commit;
+  # Or if you don't have an object created
   tied($scalar)->commit;
   tied(@array)->commit;
   tied(%hash)->commit;
@@ -328,6 +335,10 @@ Commit the current value into the history.
 
 =item previous
 
+  $previous = $scalartobj->previous;
+  @previous = $arraytob->previous;
+  %previous = $hashobj->previous;
+  # Or if you don't have an object created
   $previous = tied($scalar)->previous;
   @previous = tied(@array)->previous;
   %previous = tied(%hash)->previous;
@@ -335,7 +346,10 @@ Commit the current value into the history.
 Return the previous committed copy.
 
 =item current
-
+  $current = $scalartobj->current;
+  @current = $arraytobj->current;
+  %current = $hashtobj->current;
+  # Or if you don't have an object created
   $current = tied($scalar)->current;
   @current = tied(@array)->current;
   %current = tied(%hash)->current;
@@ -343,16 +357,22 @@ Return the previous committed copy.
 Return the current copy, even if uncommitted.
 
 =item get
-
+  $first = $scalartobj->get(0);
+  @first = $arraytobj->get(0);
+  %first = $hashtobj->get(0);
+  # Or if you don't have an object created
   $first = tied($scalar)->get(0);
   @first = tied(@array)->get(0);
   %first = tied(%hash)->get(0);
 
-Return the copy in the position passed, starting with 0 as the first, 
+Return the copy in the position passed, starting with 0 as the first,
 and -1 as the last.
 
 =item getall
-
+  @all = $scalartobj->getall;
+  @all = $arraytobj->getall;
+  @all = $hashtobj->getall;
+  # Or if you don't have an object created
   @all = tied($scalar)->getall;
   @all = tied(@array)->getall;
   @all = tied(%hash)->getall;
@@ -361,20 +381,24 @@ Return an array with all previous versions committed.
 
 =item revert
 
- tied($scalar)->revert(1);
- tied(@array)->revert(1);
- tied(%hash)->revert(1);
+  $scalartobj->revert(1);
+  $arraytobj->revert(1);
+  $hashtobj->revert(1);
+  # Or if you don't have an object created
+  tied($scalar)->revert(1);
+  tied(@array)->revert(1);
+  tied(%hash)->revert(1);
 
-Will revert the tied variable back to what position passed. If nothing 
-is passed, it will revert to the last committed item. If the last item 
-committed item is the same as the current, it will revert to the 
+Will revert the tied variable back to what position passed. If nothing
+is passed, it will revert to the last committed item. If the last item
+committed item is the same as the current, it will revert to the
 previous item. This may change in the future.
 
 =head1 DESCRIPTION
 
-Tie::History will allow you to keep a history of previous versions of 
-a variable, by means of committed the changes. As this is all stored 
-in memory, it is not for use in a production system, but best kept for 
+Tie::History will allow you to keep a history of previous versions of
+a variable, by means of committed the changes. As this is all stored
+in memory, it is not for use in a production system, but best kept for
 debugging.
 
 =head2 EXPORT
@@ -383,9 +407,9 @@ None by default.
 
 =head1 SEE ALSO
 
-Tie::HashHistory
+L<Tie::HashHistory>
 
-Tie::RDBM
+L<Tie::RDBM>
 
 =head1 AUTHOR
 
