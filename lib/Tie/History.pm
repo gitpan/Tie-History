@@ -7,40 +7,67 @@ use warnings::register;
 use Data::Dumper;
 use Carp;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub TIESCALAR {
   my $self = shift;
+  my $args = shift;
+
+  if ($args) {
+    unless (ref $args eq 'HASH') {
+      croak('->TIESCALAR: First argument to TIESCALAR constructor should be a hash reference');
+    }
+  }
+
   my $data = {
-    CURRENT  => "",
-    PREVIOUS => [],
-    RECENT   => 1, # not really, but we want to prevent a commit on nothing
-    ENTRYS   => 0,
-    TYPE     => "SCALAR",
+    CURRENT    => "",
+    PREVIOUS   => [],
+    RECENT     => 1, # not really, but we want to prevent a commit on nothing
+    ENTRYS     => 0,
+    TYPE       => "SCALAR",
+    AUTOCOMMIT => $args->{AutoCommit} || 0,
   };
   return bless $data, $self;
 }
 
 sub TIEARRAY {
   my $self = shift;
+  my $args = shift;
+
+  if ($args) {
+    unless (ref $args eq 'HASH') {
+      croak('->TIESCALAR: First argument to TIESCALAR constructor should be a hash reference');
+    }
+  }
+
   my $data = {
-    CURRENT  => [],
-    PREVIOUS => [],
-    RECENT   => 1, # not really, but we want to prevent a commit on nothing
-    ENTRYS   => 0,
-    TYPE     => "ARRAY",
+    CURRENT    => [],
+    PREVIOUS   => [],
+    RECENT     => 1, # not really, but we want to prevent a commit on nothing
+    ENTRYS     => 0,
+    TYPE       => "ARRAY",
+    AUTOCOMMIT => $args->{AutoCommit} || 0,
   };
   return bless $data, $self;
 }
 
 sub TIEHASH {
   my $self = shift;
+  my $args = shift;
+
+  if ($args) {
+    unless (ref $args eq 'HASH') {
+      croak('->TIESCALAR: First argument to TIESCALAR constructor should be a hash reference');
+    }
+  }
+
   my $data = {
-    CURRENT  => {},
-    PREVIOUS => [],
-    RECENT   => 1, # not really, but we want to prevent a commit on nothing
-    ENTRYS   => 0,
-    TYPE     => "HASH",
+    CURRENT    => {},
+    PREVIOUS   => [],
+    RECENT     => 1, # not really, but we want to prevent a commit on nothing
+    ENTRYS     => 0,
+    TYPE       => "HASH",
+    AUTOCOMMIT => $args->{AutoCommit} || 0,
   };
   return bless $data, $self;
 }
@@ -72,6 +99,20 @@ sub commit {
     $self->{RECENT} = 1;
     $self->{ENTRYS}++;
     return 1;
+  }
+}
+
+sub setautocommit {
+  my $self = shift;
+  my $value = shift;
+  if ($value == 0) {
+    $self->{AUTOCOMMIT} = 0;
+  }
+  elsif ($value == 1) {
+    $self->{AUTOCOMMIT} = 1;
+  }
+  else {
+    croak " ->setautocommit takes either 1 or 0";
   }
 }
 
@@ -119,12 +160,6 @@ sub revert {
   return 1;
 }
 
-sub SelfDump {
-  my $self = shift;
-  $Data::Dumper::Deepcopy = 1;
-  print Dumper($self);
-}
-
 sub _checkentries {
   my $self  = shift;
   my $index = shift || "NULL";
@@ -166,6 +201,9 @@ sub STORE {
     my $key   = shift;
     my $value = shift;
     return $self->{CURRENT}->{$key} = $value;
+  }
+  if ($self->{AUTOCOMMIT}) {
+    $self->commit;
   }
 }
 
@@ -321,6 +359,8 @@ Tie::History - Perl extension giving scalars, arrays and hashes a history.
 
 =head1 METHODS
 
+=over
+
 =item commit
 
   $scalartobj->commit;
@@ -346,6 +386,7 @@ Commit the current value into the history.
 Return the previous committed copy.
 
 =item current
+
   $current = $scalartobj->current;
   @current = $arraytobj->current;
   %current = $hashtobj->current;
@@ -357,6 +398,7 @@ Return the previous committed copy.
 Return the current copy, even if uncommitted.
 
 =item get
+
   $first = $scalartobj->get(0);
   @first = $arraytobj->get(0);
   %first = $hashtobj->get(0);
@@ -369,6 +411,7 @@ Return the copy in the position passed, starting with 0 as the first,
 and -1 as the last.
 
 =item getall
+
   @all = $scalartobj->getall;
   @all = $arraytobj->getall;
   @all = $hashtobj->getall;
@@ -394,6 +437,8 @@ is passed, it will revert to the last committed item. If the last item
 committed item is the same as the current, it will revert to the
 previous item. This may change in the future.
 
+=back
+
 =head1 DESCRIPTION
 
 Tie::History will allow you to keep a history of previous versions of
@@ -413,7 +458,7 @@ L<Tie::RDBM>
 
 =head1 AUTHOR
 
-Larry Shatzer <lt>larrysh@cpan.org<gt>
+Larry Shatzer, Jr., E<lt>larrysh@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -423,3 +468,5 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
+
+
